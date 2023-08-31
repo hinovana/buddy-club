@@ -1,3 +1,4 @@
+
 const buddyClub = (schoolYear) => {
   const DWEEKS  = ['月','火','水','木','金','土','日'];
   const TIMES = ['9:00', '10:00', '11:00', '15:00', '16:00', '17:00'];
@@ -9,19 +10,45 @@ const buddyClub = (schoolYear) => {
 
   const helper = {
     encodeHash(obj) {
-      return btoa(encodeURIComponent(JSON.stringify(obj)));
+      const data = [];
+
+      obj.forEach(x => {
+        //data.push(x.index, x.dweek, x.time);
+        const club = club_data[ Object.keys(club_data).find(key => key === x.club_id) ];
+        
+        data.push(
+          club.index,
+          DWEEKS.indexOf(x.dweek),
+          TIMES.indexOf(x.time),
+        );
+      });
+
+      return btoa(encodeURIComponent(data.join(',')));
     },
     decodeHash(str) {
-      return JSON.parse(decodeURIComponent(atob(str)));
+      const data = decodeURIComponent(atob(str)).split(',').map(x => parseInt(x));
+
+      return helper.arraySplit(data, 3).map(x => {
+        return {
+          club_id: Object.keys(club_data).find(key => club_data[key].index === x[0]),
+          dweek: DWEEKS[x[1]],
+          time: TIMES[x[2]],
+        };
+      });
+    },
+    arraySplit(arr, size) {
+      return arr.reduce((previous, _, i) => i % size ? previous : [...previous, arr.slice(i, i + size)], []);
     },
   };
 
   const club_data_ary = CLUB_DATA_TSV.trim().split(/\n/).map(x => x.split(/\t/)).filter(x => x[2] === schoolYear);
 
+  let index = 0;
   const club_data = club_data_ary.reduce((memo, x) => {
     const [id, type, school_year, dweek, time, running, ...s ] =  x;
     if (!memo[id]) {
       memo[id] = {
+        index: ++index,
         timetable: [],
       };
     }
@@ -64,12 +91,12 @@ const buddyClub = (schoolYear) => {
           const selecteds = Object.keys(selects).reduce((selecteds, key) => {
             const selected = $('option:selected', selects[key]);
             if (selected.data('club')) {
-              selecteds.push({ club_id: selected.data('club').id, dweek: selected.data('dweek'), time: selected.data('time'), });
+              selecteds.push({ club_id: selected.data('club').id, dweek: selected.data('dweek'), time: selected.data('time'), index: selected.data('club').index, });
             }
             return selecteds;
           }, []);
 
-          location.hash = helper.encodeHash(selecteds);
+          location.hash = '!' + helper.encodeHash(selecteds)
           disp(output);
         });
         tr.append($('<td>').append(select));
@@ -113,8 +140,14 @@ const buddyClub = (schoolYear) => {
     let selecteds_dist;
 
     try {
-      selecteds = helper.decodeHash(location.hash.replace(/^#/, ''));
-    } catch {
+      const hash = location.hash.replace(/^#/, '');
+
+      if (hash.indexOf('!') !== 0) {
+        return;
+      }
+      selecteds = helper.decodeHash(hash.replace(/^!/, ''));
+    } catch(e) {
+      console.log(e);
       return;
     }
 
@@ -199,8 +232,12 @@ const buddyClub = (schoolYear) => {
   $(document).ready(() => {
     const output = reset();
     try {
-      const selecteds = helper.decodeHash(location.hash.replace(/^#/, ''));
-      redume(selecteds);
+      const hash = location.hash.replace(/^#/, '');
+
+      if (hash.indexOf('!') === 0) {
+        const selecteds = helper.decodeHash(hash.replace(/^!/, ''));
+        redume(selecteds);
+      }
     } catch {
     } finally {
       disp(output);
