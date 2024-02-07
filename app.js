@@ -1,7 +1,7 @@
 
 const buddyClub = (schoolYear) => {
   const DWEEKS  = ['月','火','水','木','金','土','日'];
-  const TIMES = ['9:00', '10:00', '11:00', '15:00', '16:00', '17:00'];
+  const TIMES = ['9:00', '10:00', '12:00', '15:00', '16:00', '17:00'];
   const DISCOUNTS = [0, -3600, -5400, -9000, -10800, -12000];
 
   const CLUB_ZAPPI = {
@@ -103,6 +103,7 @@ const buddyClub = (schoolYear) => {
         selects[select.data('frame')] = select;
       });
     });
+
 
     Object.keys(club_data).forEach(club_id => {
       const club = club_data[club_id];
